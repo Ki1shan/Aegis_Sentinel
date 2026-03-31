@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Sentinel v3.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617;
+            --surface: #0a1628;
+            --surface2: #0f1f3d;
+            --border: #1a3a5c;
+            --accent: #10b981;
+            --accent2: #06d6a0;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --text: #94a3b8;
+            --text-bright: #e2e8f0;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--bg);
+            color: var(--accent);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container { position: relative; z-index: 1; padding: 20px; max-width: 1600px; margin: 0 auto; }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .logo-area { display: flex; align-items: center; gap: 14px; }
+        
+        .shield-icon {
+            width: 44px; height: 44px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            background: rgba(16, 185, 129, 0.05);
+            display: flex; align-items: center; justify-content: center;
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+            50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+        }
+        
+        .logo-title { font-size: 20px; font-weight: 800; color: var(--accent2); letter-spacing: -0.5px; }
+        .logo-sub { font-size: 9px; color: rgba(16, 185, 129, 0.4); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
+        
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            border: 1px solid;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-green { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.4); color: var(--accent); }
+        .btn-green:hover { background: var(--accent); color: #000; }
+        
+        .btn-yellow { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.4); color: var(--warn); }
+        .btn-yellow:hover { background: var(--warn); color: #000; }
+        
+        .btn-red { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.4); color: var(--danger); }
+        .btn-red:hover { background: var(--danger); color: #fff; }
+        
+        .btn-red.active { background: rgba(239, 68, 68, 0.2); border-color: var(--danger); animation: blink-border 1s infinite; }
+        
+        @keyframes blink-border { 50% { border-color: rgba(239, 68, 68, 0.3); } }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+        .stat-label { font-size: 9px; color: rgba(16, 185, 129, 0.4); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+        .stat-value { font-size: 22px; font-weight: 800; color: var(--accent2); }
+        .stat-value.danger { color: var(--danger); }
+        .stat-value.warn { color: var(--warn); }
+        .stat-sub { font-size: 9px; color: rgba(148, 163, 184, 0.5); margin-top: 4px; }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
+        
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 16px;
+        }
+        
+        @media (max-width: 900px) { .bottom-grid { grid-template-columns: 1fr; } }
+        
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+        
+        .panel-header {
+            padding: 10px 16px;
+            background: rgba(10, 22, 40, 0.8);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-title { font-size: 10px; font-weight: 700; color: rgba(16, 185, 129, 0.6); letter-spacing: 2px; text-transform: uppercase; }
+        
+        .panel-badge { font-size: 8px; padding: 2px 8px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; }
+        .badge-live { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent); }
+        .badge-live::before { content: '● '; animation: blink 1.5s infinite; }
+        
+        @keyframes blink { 50% { opacity: 0; } }
+        
+        .panel-body { padding: 16px; }
+        .panel-scroll { overflow-y: auto; max-height: 300px; }
+        .panel-scroll::-webkit-scrollbar { width: 3px; }
+        .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+        .panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        
+        .terminal-body { background: #000; padding: 12px 16px; font-size: 11px; height: 300px; overflow-y: auto; line-height: 1.8; }
+        .terminal-body::-webkit-scrollbar { width: 3px; }
+        .terminal-body::-webkit-scrollbar-thumb { background: #1a3a2a; }
+        
+        .log-success { color: var(--accent); }
+        .log-danger { color: var(--danger); font-weight: 700; }
+        .log-warn { color: var(--warn); }
+        .log-system { color: rgba(16, 185, 129, 0.3); }
+        .log-info { color: #60a5fa; }
+        
+        .ip-entry { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; transition: all 0.3s; }
+        .ip-entry.blocked { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03); }
+        .ip-entry.active-warn { border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.03); }
+        .ip-entry.high-risk { border-color: rgba(168, 85, 247, 0.4); background: rgba(168, 85, 247, 0.05); }
+        
+        .ip-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .ip-addr { font-size: 12px; font-weight: 700; }
+        .ip-addr.blocked { color: var(--danger); }
+        .ip-addr.safe { color: var(--accent); }
+        .ip-addr.warn { color: var(--warn); }
+        .ip-addr.critical { color: var(--danger); animation: pulse-text 1s infinite; }
+        
+        @keyframes pulse-text { 50% { opacity: 0.6; } }
+        
+        .ip-count { font-size: 10px; color: var(--text); }
+        
+        .progress-bar { height: 3px; background: rgba(148, 163, 184, 0.1); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+        .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+        .fill-green { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+        .fill-yellow { background: linear-gradient(90deg, var(--warn), #fbbf24); }
+        .fill-red { background: linear-gradient(90deg, var(--danger), #f87171); }
+        .fill-purple { background: linear-gradient(90deg, #a855f7, #c084fc); }
+        
+        .ip-meta { font-size: 9px; color: rgba(148, 163, 184, 0.4); display: flex; justify-content: space-between; }
+        
+        .unblock-btn { font-size: 9px; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.4); background: transparent; color: var(--danger); cursor: pointer; font-family: 'JetBrains Mono', monospace; transition: all 0.2s; }
+        .unblock-btn:hover { background: var(--danger); color: #fff; }
+        
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .detail-row { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+        .detail-key { font-size: 9px; color: rgba(16, 185, 129, 0.4); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+        .detail-val { font-size: 11px; color: var(--text-bright); word-break: break-all; }
+        
+        .chart-container { padding: 16px; height: 220px; }
+        
+        .system-status { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--accent); transition: all 0.3s; }
+        .system-status.alert { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.4); color: var(--danger); animation: pulse-red 1s infinite; }
+        
+        @keyframes pulse-red { 50% { background: rgba(239, 68, 68, 0.15); } }
+        
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+        .status-dot.red { background: var(--danger); }
+        
+        .threat-flash { position: fixed; top: 20px; right: 20px; background: rgba(239, 68, 68, 0.9); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; z-index: 1000; opacity: 0; transform: translateY(-10px); transition: all 0.3s; pointer-events: none; }
+        .threat-flash.show { opacity: 1; transform: translateY(0); }
+        
+        .severity-critical { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); }
+        .severity-high { background: rgba(245, 158, 11, 0.1); border: 1px solid var(--warn); }
+        .severity-medium { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; }
+        .severity-low { background: rgba(16, 185, 129, 0.05); border: 1px solid var(--accent); }
+        
+        .severity-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+        .severity-badge.critical { background: var(--danger); color: #fff; }
+        .severity-badge.high { background: var(--warn); color: #000; }
+        .severity-badge.medium { background: #3b82f6; color: #fff; }
+        .severity-badge.low { background: var(--accent); color: #000; }
+        
+        .threat-score-display { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+        .threat-score-display.critical { background: var(--danger); color: #fff; }
+        .threat-score-display.high { background: var(--warn); color: #000; }
+        .threat-score-display.medium { background: #3b82f6; color: #fff; }
+        .threat-score-display.low { background: var(--accent); color: #000; }
+        
+        .ml-indicator { display: flex; align-items: center; gap: 4px; font-size: 9px; color: #a855f7; }
+        .ml-dot { width: 6px; height: 6px; border-radius: 50%; background: #a855f7; animation: ml-pulse 2s infinite; }
+        
+        @keyframes ml-pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+        
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.95);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-title { font-size: 24px; font-weight: 800; color: var(--accent2); text-align: center; margin-bottom: 8px; }
+        .login-sub { font-size: 10px; color: var(--text); text-align: center; margin-bottom: 30px; }
+        
+        .input-group { margin-bottom: 16px; }
+        .input-label { font-size: 10px; color: rgba(16, 185, 129, 0.6); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: block; }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-bright);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1); }
+        
+        .login-btn { width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .login-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+        
+        .login-error { color: var(--danger); font-size: 11px; text-align: center; margin-top: 12px; display: none; }
+        
+        .user-badge { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; font-size: 10px; }
+        .user-badge svg { width: 14px; height: 14px; }
+        
+        .pattern-tag { font-size: 8px; padding: 2px 6px; background: rgba(168, 85, 247, 0.2); color: #a855f7; border-radius: 3px; margin-right: 4px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <div class="threat-flash" id="threat-flash">⚠ THREAT DETECTED</div>
+    
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <div class="login-title">AEGIS SENTINEL</div>
+            <div class="login-sub">v3.0 - ML-Enhanced Threat Mitigation</div>
+            <div class="input-group">
+                <label class="input-label">Username</label>
+                <input type="text" id="login-username" class="input-field" placeholder="Enter username" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label class="input-label">Password</label>
+                <input type="password" id="login-password" class="input-field" placeholder="Enter password">
+            </div>
+            <button class="login-btn" onclick="handleLogin()">AUTHENTICATE</button>
+            <div id="login-error" class="login-error">Invalid credentials</div>
+            <div style="text-align:center;margin-top:20px;font-size:10px;color:var(--text);">
+                Default: admin / aegis2024!
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="main-container" style="display:none;">
+        <div class="header">
+            <div class="logo-area">
+                <div class="shield-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div>
+                    <div class="logo-title">AEGIS SENTINEL v3.0</div>
+                    <div class="logo-sub">ML-Enhanced Threat Mitigation</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <div class="user-badge" id="user-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span id="username-display">admin</span>
+                </div>
+                <div class="system-status" id="system-status">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">OPERATIONAL</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-green" onclick="manualRequest()">INJECT REQUEST</button>
+                    <button class="btn btn-yellow" id="drill-btn" onclick="toggleDrill()">▶ STRESS DRILL</button>
+                    <button class="btn btn-red" onclick="logout()">LOGOUT</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Requests</div>
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-sub">All time tracked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Blocked IPs</div>
+                <div class="stat-value danger" id="stat-blocked">0</div>
+                <div class="stat-sub">Quarantined</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Alerts</div>
+                <div class="stat-value warn" id="stat-alerts">0</div>
+                <div class="stat-sub">Pending review</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">ML Threat Score</div>
+                <div class="stat-value" id="stat-ml" style="color:#a855f7;">0.00</div>
+                <div class="stat-sub">System average</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">High Risk IPs</div>
+                <div class="stat-value danger" id="stat-highrisk">0</div>
+                <div class="stat-sub">Score > 0.6</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Rate Limit</div>
+                <div class="stat-value" style="font-size:16px;">10 / 15s</div>
+                <div class="stat-sub">Per IP window</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Threat Registry</span>
+                    <span class="panel-badge badge-live">SCANNING</span>
+                </div>
+                <div class="panel-body panel-scroll" id="registry">
+                    <div style="color:rgba(16,185,129,0.2);font-size:11px;text-align:center;padding:40px 0;">
+                        No identifiers tracked yet...
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Active Alerts</span>
+                    <span class="ml-indicator"><span class="ml-dot"></span> ML ACTIVE</span>
+                </div>
+                <div class="panel-body panel-scroll" id="alerts-panel">
+                    <div style="color:rgba(16,185,129,0.2);font-size:11px;text-align:center;padding:40px 0;">
+                        No active alerts
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Kernel Logs</span>
+                    <span class="panel-badge badge-live">LIVE</span>
+                </div>
+                <div class="terminal-body" id="terminal">
+                    <div class="log-system">[SYS] Aegis Sentinel v3.0 initialized</div>
+                    <div class="log-system">[ML] Threat detection engine loaded</div>
+                    <div class="log-system">[DB] SQLite persistence active</div>
+                    <div class="log-system">[CFG] MAX_REQUESTS=10 WINDOW=15s</div>
+                    <div class="log-system">[AUTH] JWT authentication enabled</div>
+                    <div class="log-system">[INFO] Dashboard ready — inject requests to begin monitoring</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Traffic Timeline</span>
+                    <span style="font-size:9px;color:rgba(16,185,129,0.3);">Last 30 data points</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Request Inspector</span>
+                    <div class="ml-indicator"><span class="ml-dot"></span> ML ANALYSIS</div>
+                </div>
+                <div class="panel-body">
+                    <div class="detail-grid" id="detail-grid">
+                        <div class="detail-row" style="grid-column:span 2;">
+                            <div class="detail-key">Status</div>
+                            <div class="detail-val" id="d-status" style="color:rgba(16,185,129,0.3);">Awaiting first request...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:16px;" class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Raw API Response</span>
+                <span style="font-size:9px;color:rgba(16,185,129,0.3);">GET /api/data</span>
+            </div>
+            <div>
+                <pre id="raw-json" style="font-size:10px;color:#4ade80;background:#000;padding:16px;height:200px;overflow-y:auto;line-height:1.7;border-radius:0 0 8px 8px;font-family:'JetBrains Mono',monospace;">// Waiting for first response...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('aegis_token') || null;
+        let currentUser = JSON.parse(localStorage.getItem('aegis_user') || 'null');
+        
+        const state = {
+            registry: {},
+            alerts: [],
+            totalLocal: 0,
+            drillInterval: null,
+            chartLabels: [],
+            chartSuccess: [],
+            chartDanger: [],
+        };
+
+        function checkAuth() {
+            if (authToken && currentUser) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-container').style.display = 'block';
+                document.getElementById('username-display').textContent = currentUser.username;
+                return true;
+            }
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('main-container').style.display = 'none';
+            return false;
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const resp = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await resp.json();
+                
+                if (resp.ok && data.status === 'success') {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('aegis_token', authToken);
+                    localStorage.setItem('aegis_user', JSON.stringify(currentUser));
+                    checkAuth();
+                    logTerminal('[AUTH] Login successful', 'log-success');
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            } catch (e) {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('aegis_token');
+            localStorage.removeItem('aegis_user');
+            checkAuth();
+        }
+
+        document.getElementById('login-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        const trafficChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: state.chartLabels,
+                datasets: [{
+                    label: 'Success',
+                    data: state.chartSuccess,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16,185,129,0.08)',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: 0.4,
+                    fill: true,
+                }, {
+                    label: 'Blocked',
+                    data: state.chartDanger,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.08)',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: 0.4,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'rgba(148,163,184,0.6)',
+                            font: { family: 'JetBrains Mono', size: 9 },
+                            boxWidth: 10
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: 'rgba(148,163,184,0.3)', font: { size: 8 } },
+                        grid: { color: 'rgba(255,255,255,0.03)' }
+                    },
+                    y: {
+                        ticks: { color: 'rgba(148,163,184,0.3)', font: { size: 9 } },
+                        grid: { color: 'rgba(255,255,255,0.03)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function pushChartPoint(status) {
+            const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            state.chartLabels.push(t);
+            state.chartSuccess.push(status === 'success' ? 1 : 0);
+            state.chartDanger.push(status === 'danger' ? 1 : 0);
+            if (state.chartLabels.length > 30) {
+                state.chartLabels.shift();
+                state.chartSuccess.shift();
+                state.chartDanger.shift();
+            }
+            trafficChart.update('none');
+        }
+
+        async function sendRequest() {
+            if (!authToken) {
+                logTerminal('[AUTH] Please login first', 'log-danger');
+                return;
+            }
+            
+            try {
+                const resp = await fetch('/api/data');
+                const data = await resp.json();
+
+                state.totalLocal++;
+                updateStats(data);
+                updateTerminal(data);
+                updateRegistry(data);
+                updateDetailPanel(data);
+                updateRawJson(data);
+                pushChartPoint(data.status);
+                refreshAlerts();
+
+                if (data.status === 'danger') {
+                    flashThreat();
+                    setSystemAlert(true);
+                }
+
+                return data;
+            } catch (err) {
+                logTerminal(`[ERR] Cannot reach backend`, 'log-danger');
+            }
+        }
+
+        function manualRequest() {
+            sendRequest();
+        }
+
+        async function refreshStats() {
+            if (!authToken) return;
+            
+            try {
+                const resp = await fetch('/api/stats');
+                const data = await resp.json();
+                document.getElementById('stat-total').innerText = data.total_requests || 0;
+                document.getElementById('stat-blocked').innerText = data.blocked_ips || 0;
+                document.getElementById('stat-alerts').innerText = data.active_alerts?.length || 0;
+                document.getElementById('stat-highrisk').innerText = data.high_risk_ips?.length || 0;
+                document.getElementById('stat-ml').innerText = (data.avg_threat_score || 0).toFixed(2);
+            } catch (_) {}
+        }
+
+        function updateStats(data) {
+            document.getElementById('stat-total').innerText = data.total_requests;
+        }
+
+        function logTerminal(msg, cls = 'log-success') {
+            const term = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.className = cls;
+            div.innerText = msg;
+            term.appendChild(div);
+            while (term.children.length > 200) term.removeChild(term.firstChild);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function updateTerminal(data) {
+            const t = new Date(data.timestamp).toLocaleTimeString();
+            if (data.status === 'danger') {
+                logTerminal(`[${t}] BLOCK  ${data.ip} — ${data.message}  [Score: ${data.threat_score}]`, 'log-danger');
+            } else {
+                const pct = Math.round((data.count / data.max_requests) * 100);
+                const cls = pct >= 70 ? 'log-warn' : 'log-success';
+                logTerminal(`[${t}] ALLOW  ${data.ip} — ${data.message}  [${data.count}/${data.max_requests}]`, cls);
+                if (pct < 50) setSystemAlert(false);
+            }
+            if (data.detected_patterns?.length > 0) {
+                data.detected_patterns.forEach(p => logTerminal(`  Pattern: ${p}`, 'log-info'));
+            }
+        }
+
+        let alertTimeout = null;
+
+        function setSystemAlert(on) {
+            const statusEl = document.getElementById('system-status');
+            const dotEl = document.getElementById('status-dot');
+            const textEl = document.getElementById('status-text');
+            if (on) {
+                statusEl.classList.add('alert');
+                dotEl.classList.add('red');
+                textEl.innerText = 'THREAT DETECTED';
+                clearTimeout(alertTimeout);
+                alertTimeout = setTimeout(() => setSystemAlert(false), 5000);
+            } else {
+                statusEl.classList.remove('alert');
+                dotEl.classList.remove('red');
+                textEl.innerText = 'OPERATIONAL';
+            }
+        }
+
+        let flashTO = null;
+
+        function flashThreat() {
+            const el = document.getElementById('threat-flash');
+            el.classList.add('show');
+            clearTimeout(flashTO);
+            flashTO = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        function updateRegistry(data) {
+            const ip = data.ip;
+            if (!state.registry[ip]) {
+                state.registry[ip] = {
+                    count: 0, blocked: false, total: 0,
+                    firstSeen: new Date().toLocaleTimeString(),
+                    threat_score: 0, risk_level: 'low'
+                };
+            }
+            const entry = state.registry[ip];
+            entry.count = data.count;
+            entry.total = data.total_requests || entry.total + 1;
+            entry.threat_score = data.threat_score || 0;
+            entry.risk_level = data.risk_level || 'low';
+            if (data.blocked || data.status === 'danger') entry.blocked = true;
+            renderRegistry();
+        }
+
+        function renderRegistry() {
+            const el = document.getElementById('registry');
+            el.innerHTML = '';
+            const sorted = Object.entries(state.registry).sort((a, b) => b[1].threat_score - a[1].threat_score);
+            
+            if (sorted.length === 0) {
+                el.innerHTML = '<div style="color:rgba(16,185,129,0.2);font-size:11px;text-align:center;padding:40px 0;">No identifiers tracked yet...</div>';
+                return;
+            }
+
+            sorted.forEach(([ip, s]) => {
+                const pct = Math.min((s.count / 10) * 100, 100);
+                const isBlocked = s.blocked;
+                const riskLevel = s.risk_level || (pct >= 70 ? 'medium' : 'low');
+                
+                const ipClass = isBlocked ? 'blocked' : riskLevel === 'critical' ? 'critical' : riskLevel === 'high' ? 'warn' : 'safe';
+                const fillClass = isBlocked ? 'fill-red' : riskLevel === 'critical' ? 'fill-purple' : riskLevel === 'high' ? 'fill-yellow' : 'fill-green';
+                const entryClass = isBlocked ? 'blocked' : riskLevel === 'critical' ? 'high-risk' : riskLevel === 'high' ? 'active-warn' : '';
+
+                const div = document.createElement('div');
+                div.className = `ip-entry ${entryClass}`;
+                div.innerHTML = `
+                    <div class="ip-row">
+                        <span class="ip-addr ${ipClass}">${ip}</span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span class="threat-score-display ${riskLevel}">${(s.threat_score || 0).toFixed(2)}</span>
+                            ${isBlocked ? `<button class="unblock-btn" onclick="unblockIp('${ip}')">UNBLOCK</button>` : `<span class="ip-count">${s.count}/10</span>`}
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${fillClass}" style="width:${pct}%"></div>
+                    </div>
+                    <div class="ip-meta">
+                        <span>Total: ${s.total} | Risk: ${riskLevel.toUpperCase()}</span>
+                        <span>${s.firstSeen}</span>
+                    </div>
+                `;
+                el.appendChild(div);
+            });
+        }
+
+        async function refreshAlerts() {
+            try {
+                const resp = await fetch('/api/alerts');
+                const data = await resp.json();
+                state.alerts = data.alerts || [];
+                renderAlerts();
+                document.getElementById('stat-alerts').innerText = state.alerts.length;
+            } catch (_) {}
+        }
+
+        function renderAlerts() {
+            const el = document.getElementById('alerts-panel');
+            if (state.alerts.length === 0) {
+                el.innerHTML = '<div style="color:rgba(16,185,129,0.2);font-size:11px;text-align:center;padding:40px 0;">No active alerts</div>';
+                return;
+            }
+            
+            el.innerHTML = '';
+            state.alerts.forEach(alert => {
+                const div = document.createElement('div');
+                div.className = `alert-item severity-${alert.severity}`;
+                div.innerHTML = `
+                    <div class="alert-header">
+                        <span class="alert-ip">${alert.ip_address}</span>
+                        <span class="severity-badge ${alert.severity}">${alert.severity}</span>
+                    </div>
+                    <div class="alert-message">${alert.message}</div>
+                    <div class="alert-time">${new Date(alert.created_at).toLocaleTimeString()}</div>
+                `;
+                el.appendChild(div);
+            });
+        }
+
+        function updateDetailPanel(data) {
+            const grid = document.getElementById('detail-grid');
+            const statusColor = data.status === 'danger' ? '#ef4444' : '#10b981';
+            const ua = (data.user_agent || 'N/A').substring(0, 40) + ((data.user_agent||'').length > 40 ? '…' : '');
+
+            let mlInfo = '';
+            if (data.ml_analysis) {
+                mlInfo = `
+                    <div class="detail-row">
+                        <div class="detail-key">ML Confidence</div>
+                        <div class="detail-val" style="color:#a855f7;">${(data.ml_analysis.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                `;
+            }
+
+            if (data.detected_patterns?.length > 0) {
+                mlInfo += `
+                    <div class="detail-row" style="grid-column:span 2;">
+                        <div class="detail-key">Detected Patterns</div>
+                        <div class="detail-val">${data.detected_patterns.map(p => `<span class="pattern-tag">${p}</span>`).join('')}</div>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = `
+                <div class="detail-row" style="grid-column:span 2;">
+                    <div class="detail-key">Status</div>
+                    <div class="detail-val" style="color:${statusColor};font-weight:700;">
+                        ${data.status === 'danger' ? 'BLOCKED' : 'ALLOWED'} — ${data.message}
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-key">Client IP</div>
+                    <div class="detail-val">${data.ip}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-key">Threat Score</div>
+                    <div class="detail-val" style="color:${data.threat_score > 0.6 ? '#ef4444' : data.threat_score > 0.3 ? '#f59e0b' : '#10b981'};">
+                        ${data.threat_score.toFixed(3)} (${data.risk_level.toUpperCase()})
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-key">Window Count</div>
+                    <div class="detail-val">${data.count} / ${data.max_requests}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-key">Total (Session)</div>
+                    <div class="detail-val">${data.total_requests}</div>
+                </div>
+                ${mlInfo}
+                <div class="detail-row">
+                    <div class="detail-key">User Agent</div>
+                    <div class="detail-val" title="${data.user_agent}">${ua}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-key">Headers</div>
+                    <div class="detail-val">${data.headers_count} headers</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-key">Response Time</div>
+                    <div class="detail-val">${data.response_time_ms}ms</div>
+                </div>
+            `;
+        }
+
+        function updateRawJson(data) {
+            document.getElementById('raw-json').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function unblockIp(ip) {
+            try {
+                await fetch(`/api/unblock/${ip}`, { method: 'DELETE' });
+                if (state.registry[ip]) {
+                    state.registry[ip].blocked = false;
+                    state.registry[ip].threat_score = 0;
+                    state.registry[ip].risk_level = 'low';
+                }
+                renderRegistry();
+                logTerminal(`[ADM] ${ip} manually unblocked`, 'log-warn');
+                setSystemAlert(false);
+            } catch (e) {
+                logTerminal('[ERR] Failed to unblock IP', 'log-danger');
+            }
+        }
+
+        function toggleDrill() {
+            const btn = document.getElementById('drill-btn');
+            if (state.drillInterval) {
+                clearInterval(state.drillInterval);
+                state.drillInterval = null;
+                btn.innerText = '▶ STRESS DRILL';
+                btn.className = 'btn btn-yellow';
+                logTerminal('[SYS] Stress drill stopped', 'log-warn');
+            } else {
+                logTerminal('[SYS] Stress drill started', 'log-warn');
+                btn.innerText = '■ STOP DRILL';
+                btn.className = 'btn btn-red active';
+                state.drillInterval = setInterval(sendRequest, 400);
+            }
+        }
+
+        checkAuth();
+        if (authToken) {
+            refreshStats();
+            refreshAlerts();
+            setInterval(refreshStats, 3000);
+            setInterval(refreshAlerts, 5000);
+            logTerminal('[SYS] Frontend connected. Click INJECT REQUEST to begin.', 'log-system');
+        }
+    </script>
+</body>
+</html>

@@ -19,6 +19,13 @@ The system combines **rule-based detection** (known bot signatures, suspicious h
 
 ---
 
+## Images 
+
+<img width="1400" height="663" alt="image" src="https://github.com/user-attachments/assets/d8308534-2e43-403f-8b7b-68a07319d553" />
+<img width="1400" height="662" alt="image" src="https://github.com/user-attachments/assets/df911f7e-a5de-43f1-bd4c-dd48d1c94fde" />
+<img width="1400" height="664" alt="image" src="https://github.com/user-attachments/assets/337e6a87-5a8f-43ec-80d9-fab97aec846c" />
+
+
 ## Architecture
 
 ```
